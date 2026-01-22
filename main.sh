@@ -9,6 +9,7 @@ db_dir="$HOME"/db_dir;
 
 check_if_dir_exists(){
     [ -d $db_dir ] || mkdir -p $db_dir
+    
 }
 
 
