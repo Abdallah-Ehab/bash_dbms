@@ -11,12 +11,14 @@ make_dbms_dir(){
     [ -d $dbms_dir ] || mkdir -p $dbms_dir;
 }
 
+make_dbms_dir
+
 #function for creating database
 select option in "create database" "connect to database" "list databases" "drop database";
     do
         case "$REPLY" in
         1)
-            create_db
+            . ./create_db
             ;;
         2)
             connect_to_db
