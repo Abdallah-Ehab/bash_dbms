@@ -21,10 +21,10 @@ select option in "create database" "connect to database" "list databases" "drop 
             . ./create_db
             ;;
         2)
-            connect_to_db
+            . ./connect_to_db
             ;;
         3)
-            list_dbs
+            . ./list_dbs
             ;;
         4)
             drop_db
