@@ -18,7 +18,9 @@ make_dbms_dir(){
     [ -d $dbms_dir ] || mkdir -p $dbms_dir;
 }
 
+
 make_dbms_dir
+. ./art.sh
 
 #function for creating database
 select option in "create database" "connect to database" "list databases" "drop database";
