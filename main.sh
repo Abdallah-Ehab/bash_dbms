@@ -27,10 +27,10 @@ select option in "create database" "connect to database" "list databases" "drop 
             . ./list_dbs
             ;;
         4)
-            drop_db
+           . ./drop_db
             ;;
         *)
-            "$REPLY is not a valid option"
+           echo "$REPLY is not a valid option"
             ;;
         esac
     done
