@@ -9,13 +9,15 @@ connect_to_db(){
     [ $# -eq 1 ] || read -p "enter the name of the db to connect to : " db_name;
     if [ -d "$dbms_dir/$db_name" ]; then
     echo
-    echo -n connecting.
-    ## just a cute loading animation nothing serious
-    while "1..3"; do
-    echo -n .;
-    sleep 1;
+    echo -n "Connecting"
+
+    # just a cute loading animation connecting...
+    for i in {1..3}; do
+        echo -n "."
+        sleep 0.5  # 1 second is a bit slow for users, 0.5 feels snappier!
     done
-    echo "db connected successfully";
+
+    echo  "DB connected successfully"
     
     # cd "$dbms_dir/$cur_db";
     cur_db="$db_name"
