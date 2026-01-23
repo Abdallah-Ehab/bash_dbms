@@ -1,0 +1,12 @@
+# we can do it in 2 files 
+# 1- meta data .................... 2- data itself
+# example : meta_data for employee table
+# id : int
+# name : varchar(45)
+# salary : float
+# ssn : int 
+# primary_key : id
+# foreign_key : ssn -> id, f2->p2
+# example : data itself
+# 1,abdallah,1000,null
+# 2,omar,500, 1
