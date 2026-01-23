@@ -11,13 +11,38 @@
 # variables needed : $dbms_dir -> main.sh, $db_name -> connect_to_db.sh
 
 #check if we are connected
-
-if [ $is_connected == true ]; then
-    # we will drop the current db
-    [ -d "$dbms_dir/$db_name" ] && [ rm -rf "$dbms_dir/$db_name" ] || echo "ERROR: cant remove the current db is not found "
-    cd $dbms_dir
+if [ "$is_connected" = "true" ]; then
+    echo "Drop current database '$cur_db'? [y/n]"
+    read -r option
+    
+    if [[ "$option" =~ ^[yY]$ ]]; then
+        if [ -d "$dbms_dir/$cur_db" ]; then  
+            rm -rf "$dbms_dir/$cur_db"
+            echo "Database '$cur_db' dropped"
+            #disconnect from the cur_db
+            # Todo: make this a helper function
+            cur_db=""
+            is_connected=false
+        else
+            echo "ERROR: Database directory not found"
+        fi
+    else
+        echo "Drop cancelled"
+    fi
 else 
-    # ask for the name of the db
-    read -p "enter the db name" rem_db_name
-    [ -d "$dbms_dir/$db_name" ] && rm -rf "$dbms_dir/$db_name"
+    read -p "Enter database name to drop: " rem_db_name
+    
+    if [ -d "$dbms_dir/$rem_db_name" ]; then
+        echo "Drop '$rem_db_name'? [y/n]"
+        read -r option
+        
+        if [[ "$option" =~ ^[yY]$ ]]; then
+            rm -rf "$dbms_dir/$rem_db_name"
+            echo "Database '$rem_db_name' dropped"
+        else
+            echo "Drop cancelled"
+        fi
+    else
+        echo "ERROR: Database '$rem_db_name' does not exist"
+    fi
 fi
