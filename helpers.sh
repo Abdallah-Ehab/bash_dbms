@@ -8,8 +8,11 @@ disconnect_and_rm_curdb(){
     is_connected=false;
 }
 
-if [ "$@" -eq 1 ] && [ "$#" -eq 1 ];then
+if [ "$1" -eq 1 ] && [ "$#" -eq 1 ];then
     disconnect_and_rm_curdb
+    echo "disconnected ";
 fi
+
+. ./main.sh
 
 
