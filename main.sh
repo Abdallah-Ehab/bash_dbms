@@ -27,19 +27,19 @@ select option in "create database" "connect to database" "list databases" "drop 
     do
         case "$REPLY" in
         1)
-            . ./create_db
+            . ./create_db.sh
             break;
             ;;
         2)
-            . ./connect_to_db
+            . ./connect_to_db.sh
             break;
             ;;
         3)
-            . ./list_dbs
+            . ./list_dbs.sh
             break;
             ;;
         4)
-           . ./drop_db
+           . ./drop_db.sh
             break;
             ;;
         *)
