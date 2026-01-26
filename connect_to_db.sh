@@ -8,23 +8,25 @@ connect_to_db(){
     local db_name="";
     [ $# -eq 1 ] || read -p "enter the name of the db to connect to : " db_name;
     if [ -d "$dbms_dir/$db_name" ]; then
-    echo
-    echo -n "Connecting"
+        echo
+        echo -n "Connecting"
 
-    # just a cute loading animation connecting...
-    for i in {1..3}; do
-        echo -n "."
-        sleep 0.5  # 1 second is a bit slow for users, 0.5 feels snappier!
-    done
+        # just a cute loading animation connecting...
+        for i in {1..3}; do
+            echo -n "."
+            sleep 0.5  # 1 second is a bit slow for users, 0.5 feels snappier!
+        done
 
-    echo  "DB connected successfully"
-    
-    # cd "$dbms_dir/$cur_db";
-    cur_db="$db_name"
-    is_connected="true";
+        echo  "DB connected successfully"
+        
+        # cd "$dbms_dir/$cur_db";
+        cur_db="$db_name"
+        is_connected="true";
+        . ./after_connection.sh
     else 
         echo "there is no database with this name"
-        connect_automatically "$db_name"
+        . ./main.sh
+        # connect_automatically "$db_name"
     fi
 }
 
@@ -34,7 +36,7 @@ connect_automatically(){
     select option in "yes" "No"; do
     case $REPLY in
     1)
-       . ./create_db "$1"
+       . ./create_db.sh "$1"
        connect_to_db "$1"
        break;
        ;;

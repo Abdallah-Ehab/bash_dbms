@@ -44,3 +44,5 @@ else
         echo "ERROR: Database '$rem_db_name' does not exist"
     fi
 fi
+
+. ./main.sh

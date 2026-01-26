@@ -29,3 +29,4 @@ create_db(){
 }
 
 create_db "$@"
+. ./main.sh

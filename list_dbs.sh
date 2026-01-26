@@ -6,3 +6,4 @@ if [ -d "$dbms_dir" ] && [ "$(ls -A "$dbms_dir" 2>/dev/null)" ]; then
 else
     echo "No databases found"
 fi
+. ./main.sh

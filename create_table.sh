@@ -16,18 +16,54 @@
 
 read -p "enter the name of the table " cur_table;
 
-if [ -f "$dbms_dir"/"$cur_db"/"$cur_table" ]; then
-    read -p "$cur_table already exists do you want ot overwrite it [Y/N]" option;
+create_table(){
+    touch "$dbms_dir"/"$cur_db"/"$cur_table.meta";
+    touch "$dbms_dir"/"$cur_db"/"$cur_table.txt";
+
+    while true; do
+        read -p "enter column name (or type 'done' to finish): " col_name;
+        
+        if [ "$col_name" == "done" ]; then
+            break;
+        fi
+
+        col_type="";
+        
+        echo "enter data type for column $col_name: "
+
+        select option in "int" "string" ; do
+            case $REPLY in
+            1)
+                col_type="int";
+                break;;
+            2)
+                col_type="string"
+                break;;
+            *)
+                col_type="invalid";
+                echo "invalid option";
+                break;;
+                esac
+        done
+        if [ "$col_type" == "invalid" ]; then
+            continue;
+        fi
+        echo "$col_name:$col_type" >> "$dbms_dir"/"$cur_db"/"$cur_table.meta";
+    done
+    echo "Table structure for $cur_table created."
+}
+
+if [[ -f "$dbms_dir/$cur_db/$cur_table.txt" || -f "$dbms_dir/$cur_db/$cur_table.meta" ]]; then
+    read -p "$cur_table already exists do you want ot overwrite it [Y/N]:  " option;
     if [[ "$option" =~ ^[Yy]$ ]]; then
-        touch "$dbms_dir"/"$cur_db"/"$cur_table.meta";
-        touch "$dbms_dir"/"$cur_db"/"$cur_table.txt";
+        rm -f "$dbms_dir/$cur_db/$cur_table.txt" "$dbms_dir/$cur_db/$cur_table.meta";
+        create_table;
     else
         echo "table create cancelled"
         exit;
     fi
-    echo "table $cur_table create successfully"
 else
-    touch "$dbms_dir"/"$cur_db"/"$cur_table.meta";
-    touch "$dbms_dir"/"$cur_db"/"$cur_table.txt";
-    echo "table $cur_table create successfully";
+    create_table;
 fi
+
+. ./after_connection.sh
