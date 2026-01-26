@@ -13,6 +13,8 @@ if [ "$1" -eq 1 ] && [ "$#" -eq 1 ];then
     echo "disconnected ";
 fi
 
+# clear all args before returning to the main
+set --
 . ./main.sh
 
 

@@ -6,6 +6,7 @@
 
 create_db(){
     local cur_db=""
+
     if [ $# -eq 1 ]; then
         cur_db="$1"
     else

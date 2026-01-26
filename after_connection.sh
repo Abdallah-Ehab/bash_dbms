@@ -11,7 +11,10 @@ select option in "create table"  "list tables" "insert into table"  "drop table"
         2)
             . ./list_tables.sh;
             break;;
-        
+
+        4)
+            . ./drop_table.sh;
+            break;;
         6)
             . ./helpers.sh 1;
             break;;
