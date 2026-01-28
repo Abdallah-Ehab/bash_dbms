@@ -16,71 +16,6 @@
 ## honestly I don't know
 # id = int
 # name = varchar(45)
-
-read -p "Enter columns (comma separated): " user_input
-IFS=',' read -ra col_arr <<< "$user_input"
-
-row_data=""
-
-validate_col(){
-    local col_value=$1
-    local col_data_type=$2
-    case $col_data_type in
-    "int")
-        if [[ $col_value =~ ^[0-9]+$ ]]; then
-            row_data+=$col_value
-        else
-            echo "enter correct data type for col"
-        fi
-        ;;
-    *|"varchar")
-        if [[ $col_value =~ ^[a-zA-Z0-9[:space:]]+$ ]]; then
-            row_data+=$col_value
-        else
-            echo "enter correct data type for col"
-        fi
-        ;;
-    esac
-        
-}
-## check if the column names are correct first:
-for col in "${col_arr[@]}"; do
-    is_matching="false"
-    while IFS='=' read -r col_name; do
-        if [[ "$col" == "$col_name" ]];then
-            is_matching="true";
-            break;
-        fi
-    if [[ $is_matching != "true" ]];then
-        echo "column ($col) doesn't exist try entering a valid column";
-        exit;
-    fi
-    done < "$dbms_dir/$cur_db/$cur_table.meta"
-done
-
-## take of the order of columns while entering data
-while IFS='=' read -r col_name col_data_type; do
-    is_found="false";
-    for col in "${col_arr[@]}"; do
-        if [[ $col == $col_name ]]; then
-            is_found="true";
-            break
-        fi
-    done
-    if [[ is_found = "true" ]]; then
-        read -p "enter the value of the column ($col_name)" col_value;
-        validate_col $col_value $col_data_type
-        row_data+=,  
-    else
-        row_data+="null,"
-    fi
-done < "$dbms_dir/$cur_db/$cur_table.meta"
-
-
-row_data=$(echo "$row_data" | sed "s/,$//");
-echo "$row_data" >> "$dbms_dir/$cur_db/$cur_table"
-
-
 ## if we use hash map instead of that we would do it like that for example :
 ## there are columns : id, first_name,last_name,salary,bdate
 ## the user enters the columns : first_name,salary
@@ -92,3 +27,73 @@ echo "$row_data" >> "$dbms_dir/$cur_db/$cur_table"
 ## we 2rei7 dema8y we 5alas
 ## or we could do it the way I'm doing right now with some tweaking
 ## for order we can use array
+## also what about the primary keys
+## we may add primary key map like this : primary_key[id] = []
+## but can the key be an array like this : primary_key[[id,name,etc]] = []
+## we could also use a set like this : primar_key{[1,abdallah,1000],[2,omar,2000]} so if the user enters [1,abdallah,1000] again for example it gives an error
+
+
+## hashmap[col_name]=datatype
+## col_arr = [col1,col2,col3,...coln] this is for ordered columns
+
+validate_col() {
+    local value="$1"
+    local type="$2"
+
+    case "$type" in
+        int)
+            [[ $value =~ ^[0-9]+$ ]]
+            ;;
+        varchar)
+            [[ $value =~ ^[a-zA-Z0-9[:space:]]+$ ]]
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+
+
+declare -A hashmap;
+declare -A target_cols_set;
+declare -a col_arr;
+declare -a row_data_arr;
+
+
+meta_file="$dbms_dir/$cur_db/$cur_table.meta"
+data_file="$dbms_dir/$cur_db/$cur_table"
+
+while IFS='=' read -r col_name data_type; do
+    hashmap["$col_name"]="$data_type";
+    col_arr+=("$col_name")
+done < "$meta_file"
+
+
+read -rp "enter the col names separated by ," user_input
+IFS=',' read -ra target_cols <<< "$user_input";
+
+for col in "${target_cols[@]}"; do
+    if [[ ! -v hashmap["$col"] ]]; then
+        echo "col ($col) doesn't exist please enter valid columns";
+        exit;
+    else
+        target_cols_set[$col]=1
+    fi
+done
+
+for col in "${col_arr[@]}"; do
+    if [[ -v target_cols_set["$col"] ]]; then
+        read -rp "enter the value " col_value;
+        validate_col "$col_value" "${hashmap[$col]}" || {
+        echo "something is wrong I can feel it"; 
+        exit 1;}
+        row_data_arr+=("$col_value")
+    else
+        row_data_arr+=(null)
+    fi
+done
+
+IFS=',' row_data="${row_data_arr[*]}"
+echo "$row_data" >> "$data_file"
+
