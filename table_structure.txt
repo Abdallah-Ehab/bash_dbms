@@ -5,7 +5,7 @@
 # name : varchar(45)
 # salary : float
 # ssn : int 
-# primary_key : id
+# primary_key : id,name
 # foreign_key : ssn -> id, f2->p2
 # example : data itself
 # 1,abdallah,1000,null
