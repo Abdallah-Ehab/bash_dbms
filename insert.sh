@@ -69,7 +69,7 @@ declare -A is_pk_index
 declare -A primary_key_set
 
 # 2. Parse meta file: Get column types, order, and identify PK names
-while IFS='=' read -r key value; do
+while IFS=':' read -r key value; do
     if [[ "$key" == "primary_key" ]]; then
         IFS=',' read -ra primary_key_cols <<<"$value"
     else

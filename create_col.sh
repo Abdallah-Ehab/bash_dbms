@@ -12,6 +12,7 @@ if [ "$is_connected" != "true" ]; then
     exit
 fi
 add_col() {
+    read -p "enter the table name to add col to it : " cur_table
 
     if [ -f "$dbms_dir"/"$cur_db"/"$cur_table.meta" ]; then
         read -p "enter the col name" col_name
@@ -38,6 +39,7 @@ add_col() {
                 ;;
             esac
         done
+        echo "column added successfully"
     else
         echo "meta data file not found adding meta data file"
         touch "$dbms_dir"/"$cur_db"/"$cur_table.meta"
