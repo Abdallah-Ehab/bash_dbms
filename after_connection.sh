@@ -11,9 +11,14 @@ select option in "create table"  "list tables" "insert into table"  "drop table"
         2)
             . ./list_tables.sh;
             break;;
-
+        3)
+            . ./insert.sh;
+            break;;
         4)
             . ./drop_table.sh;
+            break;;
+        5)
+            echo "Select functionality is not yet implemented"
             break;;
         6)
             . ./helpers.sh 1;

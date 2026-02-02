@@ -6,7 +6,7 @@
 
 connect_to_db(){
     local db_name="";
-    [ $# -eq 1 ] || read -p "enter the name of the db to connect to : " db_name;
+    [ $# -eq 1 ] && db_name="$1" || read -p "enter the name of the db to connect to : " db_name;
     if [ -d "$dbms_dir/$db_name" ]; then
         echo
         echo -n "Connecting"

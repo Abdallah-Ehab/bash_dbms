@@ -7,7 +7,7 @@
 ## then after that add the col to the meta file of the table 
 # for more info refer to the table_structure.txt file
 
-if [ is_connected != "true" ];then
+if [ "$is_connected" != "true" ];then
     echo "ERROR: no db connection"
     exit
     fi

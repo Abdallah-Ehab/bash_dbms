@@ -49,6 +49,21 @@
 ## where the primary_key_string in the first phase = "1,abdallah" and in the second phase = "2,omar"
 ## then if the user attempts to enter the values : 1,abdallah again throw error : violate unique constraint
 
+# Prompt user for table name if not already set
+if [ -z "$cur_table" ]; then
+    read -p "Enter table name: " cur_table
+fi
+
+# Set meta_file and data_file paths
+meta_file="$dbms_dir/$cur_db/$cur_table.meta"
+data_file="$dbms_dir/$cur_db/$cur_table.txt"
+
+# Check if table exists
+if [ ! -f "$data_file" ] || [ ! -f "$meta_file" ]; then
+    echo "ERROR: Table '$cur_table' not found"
+    . ./after_connection.sh
+    exit 1
+fi
 
 declare -A hashmap
 declare -a col_arr
