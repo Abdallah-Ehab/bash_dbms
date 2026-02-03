@@ -7,7 +7,7 @@
 ## the code should check for hte data types of the cols and for the primary key constraint
 ## so this code is very similar to the insert code
 
-source ./helper.sh
+source ./helpers.sh
 
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"
 data_file="$dbms_dir/$cur_db/$cur_table.txt"

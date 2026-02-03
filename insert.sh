@@ -46,7 +46,7 @@
 ## where the primary_key_string in the first phase = "1,abdallah" and in the second phase = "2,omar"
 ## then if the user attempts to enter the values : 1,abdallah again throw error : violate unique constraint
 
-source ./helper.sh
+source ./helpers.sh
 
 # Prompt user for table name if not already set
 if [[ -z "$cur_table" ]]; then
