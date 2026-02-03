@@ -46,124 +46,80 @@
 ## where the primary_key_string in the first phase = "1,abdallah" and in the second phase = "2,omar"
 ## then if the user attempts to enter the values : 1,abdallah again throw error : violate unique constraint
 
+source ./helper.sh
+
 # Prompt user for table name if not already set
-if [ -z "$cur_table" ]; then
-    read -p "Enter table name: " cur_table
+if [[ -z "$cur_table" ]]; then
+    read -rp "Enter table name: " cur_table
 fi
 
-# Set meta_file and data_file paths
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"
 data_file="$dbms_dir/$cur_db/$cur_table.txt"
 
 # Check if table exists
-if [ ! -f "$data_file" ] || [ ! -f "$meta_file" ]; then
+if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
     echo "ERROR: Table '$cur_table' not found"
     . ./after_connection.sh
     exit 1
 fi
 
-declare -A hashmap
-declare -a col_arr
-declare -a primary_key_cols
-declare -A is_pk_index
-declare -A primary_key_set
+## populate shared metadata structures
+populate_table_metadata
 
-# 2. Parse meta file: Get column types, order, and identify PK names
-while IFS=':' read -r key value; do
-    if [[ "$key" == "primary_key" ]]; then
-        IFS=',' read -ra primary_key_cols <<<"$value"
-    else
-        hashmap["$key"]="$value"
-        col_arr+=("$key")
-    fi
-done <"$meta_file"
-
-# 3. Map column indices to PK status
-# This tells us: "Is column index 0 a PK? Is index 1 a PK?"
-for i in "${!col_arr[@]}"; do
-    for pk_name in "${primary_key_cols[@]}"; do
-        if [[ "${col_arr[$i]}" == "$pk_name" ]]; then
-            is_pk_index[$i]=1
-        fi
-    done
-done
-
-if [[ -f "$data_file" ]]; then
-    while read -r line; do
-        IFS=',' read -ra row_vals <<<"$line"
-        pk_val_build=()
-        for i in "${!row_vals[@]}"; do
-            if [[ -v is_pk_index[$i] ]]; then
-                pk_val_build+=("${row_vals[$i]}")
-            fi
-        done
-        # Join primary key values with commas to create the unique key
-        key_str=$(
-            IFS=,
-            echo "${pk_val_build[*]}"
-        )
-        primary_key_set["$key_str"]=1
-    done <"$data_file"
-fi
-
-validate_col() {
-    local value="$1"
-    local type="$2"
-    case "$type" in
-    int) [[ $value =~ ^[0-9]+$ ]] ;;
-    varchar*) [[ $value =~ ^[a-zA-Z0-9[:space:]]+$ ]] ;;
-    *) return 0 ;;
-    esac
-}
-
+## read target columns
 declare -A target_cols_set
 read -rp "Enter the col names separated by , (e.g. id,name): " user_input
 IFS=',' read -ra target_cols <<<"$user_input"
 
 for col in "${target_cols[@]}"; do
-    if [[ ! -v hashmap["$col"] ]]; then
+    if [[ ! -v col_datatype_dic["$col"] ]]; then
         echo "Error: Column ($col) doesn't exist."
         exit 1
     fi
-    target_cols_set[$col]=1
+    target_cols_set["$col"]=1
 done
 
-# 6. build the pk_string
+## build row data in correct column order
 declare -a row_data_arr
 declare -a current_pk_vals
 
 for col in "${col_arr[@]}"; do
     if [[ -v target_cols_set["$col"] ]]; then
         read -rp "Enter value for $col: " col_value
-        validate_col "$col_value" "${hashmap[$col]}" || {
-            echo "Validation failed"
+
+        ## datatype validation
+        validate_value_by_type "$col_value" "${col_datatype_dic[$col]}" || {
+            echo "Validation failed for column $col"
             exit 1
         }
 
-        # Check if this column is a PK
-        for pk_name in "${primary_key_cols[@]}"; do
-            if [[ "$col" == "$pk_name" ]]; then
-                current_pk_vals+=("$col_value")
-            fi
-        done
+        ## if column is part of PK, collect value
+        if [[ -v primary_key_dic["$col"] ]]; then
+            current_pk_vals+=("$col_value")
+        fi
+
         row_data_arr+=("$col_value")
     else
         row_data_arr+=("null")
     fi
 done
 
+## build primary key string
 new_pk_str=$(
-    IFS=,
+    IFS=','
     echo "${current_pk_vals[*]}"
 )
 
-if [[ -v primary_key_set["$new_pk_str"] ]]; then
+## enforce primary key uniqueness
+if [[ -v pk_value_set["$new_pk_str"] ]]; then
     echo "Error: Primary Key violation! ($new_pk_str) already exists."
     exit 1
 fi
 
-echo "$(
-    IFS=,
+## insert row
+(
+    IFS=','
     echo "${row_data_arr[*]}"
-)" >>"$data_file"
+) >>"$data_file"
+
 echo "Record inserted successfully."
