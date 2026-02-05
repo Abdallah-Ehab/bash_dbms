@@ -20,7 +20,7 @@ select option in "create table" "list tables" "insert into table" "drop table" "
         break
         ;;
     5)
-        echo "Select functionality is not yet implemented"
+        . ./select.sh
         break
         ;;
     6)
