@@ -1,7 +1,7 @@
 #!/bin/bash
 # this file to handle operations after connection to db
 
-select option in "create table" "list tables" "insert into table" "drop table" "select from table" "disconnect from db" "add column to table"; do
+select option in "create table" "list tables" "insert into table" "drop table" "select from table" "disconnect from db" "add column to table" "update on table"; do
     case "$REPLY" in
     1)
         . ./create_table.sh
@@ -29,6 +29,10 @@ select option in "create table" "list tables" "insert into table" "drop table" "
         ;;
     7)
         . ./create_col.sh
+        break
+        ;;
+    8)
+        . ./update.sh
         break
         ;;
     *)

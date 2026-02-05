@@ -9,6 +9,7 @@
 
 source ./helpers.sh
 
+read -rp "enter table name you eant to update: " cur_table;
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"
 data_file="$dbms_dir/$cur_db/$cur_table.txt"
 
