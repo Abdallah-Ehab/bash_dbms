@@ -80,4 +80,4 @@ else
     create_table
 fi
 
-. ./after_connection.sh
+. ./src/after_connection.sh

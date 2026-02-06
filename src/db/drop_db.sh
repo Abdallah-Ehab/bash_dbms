@@ -19,7 +19,7 @@ if [ "$is_connected" = "true" ]; then
             rm -rf "$dbms_dir/$cur_db"
             echo "Database '$cur_db' dropped"
             #disconnect from the cur_db
-            . ./helpers.sh 1
+            . ./src/helpers.sh 1
         else
             echo "ERROR: Database directory not found"
         fi

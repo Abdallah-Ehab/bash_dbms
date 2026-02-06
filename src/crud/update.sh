@@ -7,7 +7,7 @@
 ## the code should check for the data types of the cols and for the primary key constraint
 ## so this code is very similar to the insert code
 
-source ./helpers.sh
+source ./src/helpers.sh
 
 read -rp "enter table name you want to update: " cur_table
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"

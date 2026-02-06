@@ -16,25 +16,25 @@ make_dbms_dir() {
 }
 
 make_dbms_dir
-. ./art.sh
+. ./src/art.sh
 
 #function for creating database
 select option in "create database" "connect to database" "list databases" "drop database"; do
     case "$REPLY" in
     1)
-        . ./create_db.sh
+        . ./src/db/create_db.sh
         break
         ;;
     2)
-        . ./connect_to_db.sh
+        . ./src/db/connect_to_db.sh
         break
         ;;
     3)
-        . ./list_dbs.sh
+        . ./src/db/list_dbs.sh
         break
         ;;
     4)
-        . ./drop_db.sh
+        . ./src/db/drop_db.sh
         break
         ;;
     *)

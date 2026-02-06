@@ -4,35 +4,35 @@
 select option in "create table" "list tables" "insert into table" "drop table" "select from table" "disconnect from db" "add column to table" "update on table"; do
     case "$REPLY" in
     1)
-        . ./create_table.sh
+        . ./src/table/create_table.sh
         break
         ;;
     2)
-        . ./list_tables.sh
+        . ./src/table/list_tables.sh
         break
         ;;
     3)
-        . ./insert.sh
+        . ./src/crud/insert.sh
         break
         ;;
     4)
-        . ./drop_table.sh
+        . ./src/table/drop_table.sh
         break
         ;;
     5)
-        . ./select.sh
+        . ./src/crud/select.sh
         break
         ;;
     6)
-        . ./helpers.sh 1
+        . ./src/helpers.sh 1
         break
         ;;
     7)
-        . ./create_col.sh
+        . ./src/table/create_col.sh
         break
         ;;
     8)
-        . ./update.sh
+        . ./src/crud/update.sh
         break
         ;;
     *)
@@ -42,4 +42,4 @@ select option in "create table" "list tables" "insert into table" "drop table" "
     esac
 done
 
-. ./after_connection.sh
+. ./src/after_connection.sh
