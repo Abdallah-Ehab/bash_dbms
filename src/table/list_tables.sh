@@ -2,7 +2,7 @@
 
 if [ -d "$dbms_dir/$cur_db" ] && [ "$(ls -A "$dbms_dir/$cur_db" 2>/dev/null)" ]; then
     echo "Tables in $cur_db:"
-    
+
     #print tables without .meta, .txt
     for file in "$dbms_dir/$cur_db"/*.txt; do
         if [ -f "$file" ]; then
@@ -15,6 +15,6 @@ else
     echo "No tables found"
 fi
 
-echo "";
-echo "";
-. ./after_connection.sh
+echo ""
+echo ""
+. ./src/after_connection.sh

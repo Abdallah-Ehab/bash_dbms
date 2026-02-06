@@ -21,7 +21,7 @@ connect_to_db() {
         # cd "$dbms_dir/$cur_db";
         cur_db="$db_name"
         is_connected="true"
-        . ./after_connection.sh
+        . ./src/after_connection.sh
     else
         echo "there is no database with this name"
         . ./dbms.sh
@@ -34,7 +34,7 @@ connect_automatically() {
     select option in "yes" "No"; do
         case $REPLY in
         1)
-            . ./create_db.sh "$1"
+            . ./src/db/create_db.sh "$1"
             connect_to_db "$1"
             break
             ;;

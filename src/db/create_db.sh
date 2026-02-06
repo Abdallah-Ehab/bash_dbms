@@ -26,4 +26,4 @@ create_db() {
 }
 
 create_db "$@"
-. ./dbms.sh
+. ./src/after_connection.sh

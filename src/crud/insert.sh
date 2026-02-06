@@ -46,7 +46,7 @@
 ## where the primary_key_string in the first phase = "1,abdallah" and in the second phase = "2,omar"
 ## then if the user attempts to enter the values : 1,abdallah again throw error : violate unique constraint
 
-source ./helpers.sh
+source ./src/helpers.sh
 
 # Prompt user for table name if not already set
 if [[ -z "$cur_table" ]]; then
@@ -59,7 +59,7 @@ data_file="$dbms_dir/$cur_db/$cur_table.txt"
 # Check if table exists
 if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
     echo "ERROR: Table '$cur_table' not found"
-    . ./after_connection.sh
+    . ./src/after_connection.sh
     exit 1
 fi
 
