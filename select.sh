@@ -49,16 +49,27 @@ extract(){
     echo "$columns + $table + $where_clouse"
 }
 
+# disable file expantion gloupaly
+set -f;
 parse(){
-    if [[ $columns == *  ]]; then
+    if [[ "$columns" == "*"  ]]; then
+        echo "innnnnnnnnnnnnnnnnnnnnnnnnn"
         selected_cols=("${col_arr[@]}");
     else
+        echo "outtttttttttttttttttttttttttt"
+
         IFS=',' read -ra selected_cols<<<"$columns";
     fi
+    echo parse-----selectedddd_colllssss;
+    for col in "${selected_cols[@]}"; do
+        echo "$col"______
+    done;
+
     for i in "${!selected_cols[@]}"; do
         selected_cols[$i]=$(echo "${selected_cols[$i]}"|xargs);
         # echo "${selected_cols[$i]}";
     done;
+    echo another parse-----selectedddd_colllssss; "${selected_cols[*]}"
 
     for col in "${selected_cols[@]}"; do 
         if [[ ! -v col_index_dic[$col] ]]; then
@@ -135,6 +146,7 @@ execute_query(){
         fi
     done;
 
+    echo selectedddd_colllssss; "${selected_cols[*]}"
     for col in "${selected_cols[@]}"; do
         selected_col_indeces+=("${col_index_dic[$col]}");
     done
@@ -156,6 +168,7 @@ execute_query(){
         cur_row_val="${row_vals[$where_idx]}";
         filtered=();
         if evaluate_where "$cur_row_val" "$where_op" "$where_val" "${col_datatype_dic[$where_col]}"; then
+            echo "${selected_col_indeces[*]}"
             echo "yesssssssssssssssssssssssssssss"
             for idx in "${selected_col_indeces[@]}"; do
                 filtered+=("${row_vals[$idx]}");
@@ -173,13 +186,88 @@ execute_query(){
     echo "${selected_col_indeces[@]}"
     echo "$data"
 
+}
+desplay(){
+    if [ ${#final_res[@]} -eq 0 ]; then
+        echo "Empty set";
+        return;
+    fi
+    declare -a header_cols;
+    
+    IFS=',' read -ra header_cols<<<"${final_res[0]}";
 
+    col_width=();
+    for col in "${header_cols[@]}"; do
+        col_width+=("${#col}");
+    done
+
+    for ((i=1; i<${#final_res[@]}; i++)){
+        IFS=',' read -ra row_data<<<"${final_res[$i]}";
+
+        for j in "${!row_data[@]}"; do
+            val=${row_data[$j]};
+            len=${#val};
+            [[ $val == "null" ]] && val="NULL";
+
+            ((len > col_width[j])) && col_width[$j]=$len;
+        done
+    }
+
+    # add_padding
+    for i in "${!col_width[@]}"; do
+        ((col_width[i] = col_width[i] + 2));
+    done
+    print_separator(){
+        echo -n "+"
+        for w in "${col_width[@]}"; do 
+            printf "%${w}s" ""| tr ' ' '-';
+            echo -n "+";
+        done
+        echo ""
+    }
+    print_separator;
+
+    #print header
+    echo -n "|"
+    for i in "${!header_cols[@]}"; do 
+        printf " %-$((col_width[$i]-1))s" "${header_cols[$i]}";
+        echo -n "|";
+    done
+    echo ""
+
+    print_separator;
+
+    #print values
+
+    for ((i=1; i<${#final_res[@]}; i++)){
+        IFS=',' read -ra row_data<<<"${final_res[$i]}";
+
+        echo -n "|"
+        for j in "${!row_data[@]}"; do
+            val=${row_data[$j]};
+            len=${#val};
+            [[ $val == "null" ]] && val="NULL";
+            printf " %-$((col_width[$j]-1))s" "$val";
+            echo -n "|"
+        done
+        echo "";
+    }
+    print_separator;
 
 
 }
+
 extract;
 parse;
 execute_query;
-echo "${final_res[@]}";
+desplay;
+
+for col in "${col_width[@]}"; do 
+    echo -n $col;
+done
+
+set +f
+# echo "${final_res[@]}";
+
 # echo "${selected_cols[@]}";
 # select we,   rre   from users

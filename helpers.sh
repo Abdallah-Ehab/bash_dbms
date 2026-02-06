@@ -33,6 +33,7 @@ populate_table_metadata() {
     col_arr=()
     primary_key_order_arr=()
     pk_value_set=()
+    all_tables=();
 
     ## 1- parse meta file
     while IFS=':' read -r key value; do
