@@ -1,23 +1,33 @@
 #!/bin/bash
 
-# Define colors
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Define Colors
+# \033[1;36m = Bold Cyan
+# \033[1;37m = Bold White
+# \033[0m    = No Color (Reset)
+COLOR_THEME='\033[1;36m'
+COLOR_ACCENT='\033[1;37m'
+NC='\033[0m'
 
 show_logo() {
-    echo -e "${CYAN}"
-    # The quotes around "EOF" are important to prevent backslash issues
+    clear
+    echo -e "${COLOR_THEME}"
+
+    # The quotes around "EOF" prevent backslash/variable issues
+    # This uses the Unicode "Full Block" (█) for maximum thickness
     cat <<"EOF"
-      /|      _______
-     / |     /      /
-    /  |    /  ____/ 
-   / ^ |   /  /_     
-  / ___|  /  __/     
- / /   | /  /____    
-/_/    |/_______/    
+      ████████      ███      ███
+     ███    ███     ████    ████
+     ███    ███     █████  █████
+     ██████████     ███ ████ ███
+     ███    ███     ███  ██  ███
+     ███    ███     ███      ███
+     ███    ███     ███      ███
 EOF
+
     echo -e "${NC}"
-    echo -e " [ AE DBMS - Session Started: $(date +%H:%M:%S) ]\n"
+    echo -e "${COLOR_ACCENT}==========================================${NC}"
+    echo -e " [ AM DBMS - Session Started: $(date +%H:%M:%S) ]"
+    echo -e "${COLOR_ACCENT}==========================================${NC}\n"
 }
 
 # Call the function

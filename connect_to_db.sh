@@ -24,7 +24,7 @@ connect_to_db() {
         . ./after_connection.sh
     else
         echo "there is no database with this name"
-        . ./main.sh
+        . ./dbms.sh
         # connect_automatically "$db_name"
     fi
 }
