@@ -1,6 +1,4 @@
 #!/bin/bash
-# select from table functionality is not yet implemented
-
 
 # if [ "$is_connected" != "true" ]; then
 #     echo "ERROR: no db connection"
@@ -9,40 +7,24 @@
 
 source ./helpers.sh
 
-read -rp "enter table name you wnat to select on: " cur_table;
-# meta_file="$dbms_dir/$cur_db/$cur_table.meta"
-# data_file="$dbms_dir/$cur_db/$cur_table.txt"
+# read -rp "enter table name you wnat to select on: " cur_table;
 
+# declare columns;
+# declare table;
+# declare where_clouse;
+# declare where_col;
+# declare where_op;
+# declare where_val;
+# declare where_idx;
+# declare -a selected_cols;
 
-meta_file="/home/mahmoudnabil/dbms_dir/iti/$cur_table.meta"
-data_file="/home/mahmoudnabil/dbms_dir/iti/$cur_table.txt"
-
-
-populate_table_metadata
-
-read -p "Enter your sql select query: " sql_query;
-
-
-sql_query=$(echo "$sql_query"|tr -s ' ');
-# sql_query=$(echo "$sql_query" | sed 's/[[:space:]]*;$//')
-echo "$sql_query"
-
-declare columns;
-declare table;
-declare where_clouse;
-declare where_col;
-declare where_op;
-declare where_val;
-declare where_idx;
-declare -a selected_cols;
-
-declare -a selected_col_indeces;
+# declare -a selected_col_indeces;
 
 extract(){
     columns=$( echo $sql_query| sed -n "s/.*SELECT \(.*\) FROM.*/\1/pi");
 
     table=$( echo $sql_query| sed -n "s/.*FROM \([^ ]*\).*/\1/pi");
-
+    cur_table=$table;
     where_clouse=$( echo $sql_query| sed -n "s/.*WHERE \(.*\)/\1/pi");
 
     where_clouse=$(echo $where_clouse | sed 's/[[:space:]]*;$//');
@@ -50,26 +32,16 @@ extract(){
 }
 
 # disable file expantion gloupaly
-set -f;
 parse(){
     if [[ "$columns" == "*"  ]]; then
-        echo "innnnnnnnnnnnnnnnnnnnnnnnnn"
         selected_cols=("${col_arr[@]}");
     else
-        echo "outtttttttttttttttttttttttttt"
-
         IFS=',' read -ra selected_cols<<<"$columns";
     fi
-    echo parse-----selectedddd_colllssss;
-    for col in "${selected_cols[@]}"; do
-        echo "$col"______
-    done;
 
     for i in "${!selected_cols[@]}"; do
         selected_cols[$i]=$(echo "${selected_cols[$i]}"|xargs);
-        # echo "${selected_cols[$i]}";
     done;
-    echo another parse-----selectedddd_colllssss; "${selected_cols[*]}"
 
     for col in "${selected_cols[@]}"; do 
         if [[ ! -v col_index_dic[$col] ]]; then
@@ -85,8 +57,6 @@ parse(){
         where_val="${BASH_REMATCH[3]}";
     fi
 
-
-    echo "$where_col:$where_op:$where_val";
 }
 
 evaluate_where(){
@@ -146,18 +116,14 @@ execute_query(){
         fi
     done;
 
-    echo selectedddd_colllssss; "${selected_cols[*]}"
     for col in "${selected_cols[@]}"; do
         selected_col_indeces+=("${col_index_dic[$col]}");
     done
     if [[ -n $where_col ]]; then
-        echo "insideeeee"
         where_idx=("${col_index_dic[$where_col]}");
     fi
 
-    echo "where_col" "$where_col" "where_idx" "$where_idx";
     #loop on row data
-    final_res=();
     header=$(
         IFS=','
         echo "${selected_cols[*]}"
@@ -167,25 +133,23 @@ execute_query(){
         IFS=',' read -ra row_vals <<<"$row";
         cur_row_val="${row_vals[$where_idx]}";
         filtered=();
-        if evaluate_where "$cur_row_val" "$where_op" "$where_val" "${col_datatype_dic[$where_col]}"; then
-            echo "${selected_col_indeces[*]}"
-            echo "yesssssssssssssssssssssssssssss"
-            for idx in "${selected_col_indeces[@]}"; do
-                filtered+=("${row_vals[$idx]}");
-            done
+        
+        if [[ -n $where_col ]]; then
             
-            data=$(
-                IFS=','
-                echo "${filtered[*]}"
-            );
-            final_res+=("$data");
-
+            if ! evaluate_where "$cur_row_val" "$where_op" "$where_val" "${col_datatype_dic[$where_col]}"; then
+                continue;
+            fi
         fi
+        for idx in "${selected_col_indeces[@]}"; do
+            filtered+=("${row_vals[$idx]}");
+        done
+        
+        data=$(
+            IFS=','
+            echo "${filtered[*]}"
+        );
+        final_res+=("$data");
     done <"$data_file";
-
-    echo "${selected_col_indeces[@]}"
-    echo "$data"
-
 }
 desplay(){
     if [ ${#final_res[@]} -eq 0 ]; then
@@ -253,21 +217,59 @@ desplay(){
         echo "";
     }
     print_separator;
+    echo "$((${#final_res[@]} - 1)) rows in set"
 
 
 }
 
-extract;
-parse;
-execute_query;
-desplay;
 
-for col in "${col_width[@]}"; do 
-    echo -n $col;
-done
+main_select(){
+    
+    declare -a history_arr;
+    clear;
+    while true; do
+        # local variables to reset every loop
+        local columns=""
+        local table=""
+        local where_clouse=""
+        local where_col=""
+        local where_op=""
+        local where_val=""
+        local where_idx=""
+        local -a selected_cols=()
+        local -a selected_col_indeces=()
+        local -a final_res=() 
+        
+        echo "Enter your sql select query :)"
+        read -p "ourSql> " sql_query;
 
-set +f
-# echo "${final_res[@]}";
+        case "${sql_query,,}" in 
+            exit|q|quit|bye|\\q)
+                echo "Bye 👋";
+                break;
+                ;;
+            clear)
+                clear;
+                continue;
+                ;;
+        esac
+        sql_query=$(echo "$sql_query"|tr -s ' ');
+        sql_query=$(echo "$sql_query" | sed 's/[[:space:]]*;$//');
+        history_arr+=("$sql_query");
 
-# echo "${selected_cols[@]}";
-# select we,   rre   from users
+        set -f;
+        extract;
+        meta_file="$dbms_dir/$cur_db/$cur_table.meta"
+        data_file="$dbms_dir/$cur_db/$cur_table.txt"
+        populate_table_metadata;
+        parse;
+        execute_query;
+        desplay;
+
+        set +f;
+    
+    done
+}
+
+main_select;
+. ./after_connection.sh;

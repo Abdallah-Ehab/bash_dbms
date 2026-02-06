@@ -35,6 +35,23 @@ populate_table_metadata() {
     pk_value_set=()
     all_tables=();
 
+    ## 0- get all tables
+
+
+    if [ -d "$dbms_dir/$cur_db" ] && [ "$(ls -A "$dbms_dir/$cur_db" 2>/dev/null)" ]; then
+        echo "Tables in $cur_db:"
+        
+        #print tables without .meta, .txt
+        for file in "$dbms_dir/$cur_db"/*.txt; do
+            if [ -f "$file" ]; then
+                table_name=$(basename "$file" .txt) # basename ==> get file name only
+                all_tables+=("$table_name");
+            fi
+        done
+
+    else
+        echo "No tables found"
+    fi
     ## 1- parse meta file
     while IFS=':' read -r key value; do
         if [[ "$key" == "primary_key" ]]; then
