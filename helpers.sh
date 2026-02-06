@@ -23,6 +23,15 @@ disconnect_and_rm_curdb() {
 
 populate_table_metadata() {
 
+    # Unset all global arrays first to clear any previous state
+    unset col_datatype_dic
+    unset col_arr
+    unset col_index_dic
+    unset primary_key_order_arr
+    unset primary_key_dic
+    unset pk_value_set
+    unset all_tables
+
     declare -gA col_datatype_dic
     declare -ga col_arr
     declare -gA col_index_dic
@@ -30,22 +39,18 @@ populate_table_metadata() {
     declare -gA primary_key_dic
     declare -gA pk_value_set
 
-    col_arr=()
-    primary_key_order_arr=()
-    pk_value_set=()
-    all_tables=();
+    all_tables=()
 
     ## 0- get all tables
 
-
     if [ -d "$dbms_dir/$cur_db" ] && [ "$(ls -A "$dbms_dir/$cur_db" 2>/dev/null)" ]; then
         echo "Tables in $cur_db:"
-        
+
         #print tables without .meta, .txt
         for file in "$dbms_dir/$cur_db"/*.txt; do
             if [ -f "$file" ]; then
                 table_name=$(basename "$file" .txt) # basename ==> get file name only
-                all_tables+=("$table_name");
+                all_tables+=("$table_name")
             fi
         done
 
@@ -54,8 +59,13 @@ populate_table_metadata() {
     fi
     ## 1- parse meta file
     while IFS=':' read -r key value; do
+        key=$(echo "$key" | xargs) # trim whitespace
         if [[ "$key" == "primary_key" ]]; then
             IFS=',' read -ra primary_key_order_arr <<<"$value"
+            # trim whitespace from each primary key column name
+            for i in "${!primary_key_order_arr[@]}"; do
+                primary_key_order_arr[$i]=$(echo "${primary_key_order_arr[$i]}" | xargs)
+            done
         else
             col_datatype_dic["$key"]="$value"
             col_arr+=("$key")
@@ -94,9 +104,24 @@ validate_value_by_type() {
     local val="$1"
     local type="$2"
 
+    # Trim whitespace from value
+    val=$(echo "$val" | xargs)
+
     case "$type" in
-    int) [[ "$val" =~ ^[0-9]+$ ]] ;;
-    varchar*) [[ "$val" =~ ^[a-zA-Z0-9[:space:]]*$ ]] ;;
+    int)
+        if [[ "$val" =~ ^[0-9]+$ ]]; then
+            return 0
+        else
+            return 1
+        fi
+        ;;
+    string)
+        if [[ -n "$val" ]]; then
+            return 0
+        else
+            return 1
+        fi
+        ;;
     *) return 0 ;;
     esac
 }

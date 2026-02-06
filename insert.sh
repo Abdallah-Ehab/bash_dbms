@@ -80,8 +80,8 @@ for col in "${target_cols[@]}"; do
 done
 
 ## build row data in correct column order
-declare -a row_data_arr
-declare -a current_pk_vals
+declare -a row_data_arr=()
+declare -a current_pk_vals=()
 
 for col in "${col_arr[@]}"; do
     if [[ -v target_cols_set["$col"] ]]; then
