@@ -11,37 +11,38 @@
 
 #check if we are connected
 if [ "$is_connected" = "true" ]; then
-    echo "Drop current database '$cur_db'? [y/n]"
-    read -r option
-
-    if [[ "$option" =~ ^[yY]$ ]]; then
+    if gum confirm "Drop current database '$cur_db'? This action cannot be undone."; then
         if [ -d "$dbms_dir/$cur_db" ]; then
-            rm -rf "$dbms_dir/$cur_db"
-            echo "Database '$cur_db' dropped"
+            gum spin --spinner dot --title "Dropping database '$cur_db'..." -- rm -rf "$dbms_dir/$cur_db"
+            gum style --foreground 82 "✓ Database '$cur_db' dropped successfully"
             #disconnect from the cur_db
             . ./src/helpers.sh 1
         else
-            echo "ERROR: Database directory not found"
+            gum style --foreground 196 "✗ ERROR: Database directory not found"
         fi
     else
-        echo "Drop cancelled"
+        gum style --foreground 196 "Drop cancelled"
     fi
 else
-    read -p "Enter database name to drop: " rem_db_name
+    rem_db_name=$(gum input --placeholder "Enter database name to drop")
+
+    if [ -z "$rem_db_name" ]; then
+        gum style --foreground 196 "Database name cannot be empty"
+        . ./dbms.sh
+        return 1
+    fi
 
     if [ -d "$dbms_dir/$rem_db_name" ]; then
-        echo "Drop '$rem_db_name'? [y/n]"
-        read -r option
-
-        if [[ "$option" =~ ^[yY]$ ]]; then
-            rm -rf "$dbms_dir/$rem_db_name"
-            echo "Database '$rem_db_name' dropped"
+        if gum confirm "Drop '$rem_db_name'? This action cannot be undone."; then
+            gum spin --spinner dot --title "Dropping database '$rem_db_name'..." -- rm -rf "$dbms_dir/$rem_db_name"
+            gum style --foreground 82 "✓ Database '$rem_db_name' dropped successfully"
         else
-            echo "Drop cancelled"
+            gum style --foreground 196 "Drop cancelled"
         fi
     else
-        echo "ERROR: Database '$rem_db_name' does not exist"
+        gum style --foreground 196 "✗ ERROR: Database '$rem_db_name' does not exist"
     fi
 fi
 
+sleep 1
 . ./dbms.sh

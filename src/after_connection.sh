@@ -1,45 +1,49 @@
 #!/bin/bash
 # this file to handle operations after connection to db
 
-select option in "Select from table" "Update a table" "Delete from table" "Insert into table" "Create table" "List tables" "Drop table"; do
-    case "$REPLY" in
-    1)
+while true; do
+    option=$(gum choose \
+        "Select from table" \
+        "Update a table" \
+        "Delete from table" \
+        "Insert into table" \
+        "Create table" \
+        "List tables" \
+        "Drop table" \
+        "Disconnect" \
+        --header "Database: $cur_db")
+
+    case "$option" in
+    "Select from table")
         . ./src/crud/select.sh
-        break
         ;;
-    2)
+    "Update a table")
         . ./src/crud/update.sh
-        break
         ;;
-    3)
+    "Delete from table")
         . ./src/crud/delete.sh
-        break
         ;;
-    4)
+    "Insert into table")
         . ./src/crud/insert.sh
-        break
         ;;
-    5)
+    "Create table")
         . ./src/table/create_table.sh
-        break
         ;;
-    6)
+    "List tables")
         . ./src/table/list_tables.sh 1
-        break
         ;;
-    7)
-        . ./src/table/create_col.sh
-        break
-        ;;
-    8)
+    "Drop table")
         . ./src/table/drop_table.sh
-        break
+        ;;
+    "Disconnect")
+        gum style --foreground 82 "✓ Disconnected from database '$cur_db'"
+        cur_db=""
+        is_connected="false"
+        sleep 1
+        . ./dbms.sh
         ;;
     *)
-        echo "$REPLY is not a valid option"
-        break
+            gum style --foreground 196 "Invalid option"
         ;;
     esac
 done
-
-. ./src/after_connection.sh

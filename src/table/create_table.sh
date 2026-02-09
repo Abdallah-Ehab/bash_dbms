@@ -9,10 +9,13 @@
 # 2- the user is asked to add a column
 # 3- the user is asked about the data type of the column
 
-## what will the table file look like though? :
-## refer to : table_structure.txt file for more info
+cur_table=$(gum input --placeholder "Enter the name of the table")
 
-read -rp "enter the name of the table " cur_table
+if [ -z "$cur_table" ]; then
+    gum style --foreground 196 "Table name cannot be empty"
+    . ./src/after_connection.sh
+    return 1
+fi
 
 create_table() {
     touch "$dbms_dir"/"$cur_db"/"$cur_table.meta"
@@ -21,63 +24,51 @@ create_table() {
     declare -a col_names_arr=()
 
     while true; do
-        read -rp "enter column name (or type 'done' to finish): " col_name
+        col_name=$(gum input --placeholder "Enter column name (or type 'done' to finish)")
 
-        if [ "$col_name" == "done" ]; then
+        if [ "$col_name" == "done" ] || [ -z "$col_name" ]; then
+            if [ ${#col_names_arr[@]} -eq 0 ]; then
+                gum style --foreground 196 "At least one column is required"
+                continue
+            fi
             break
         fi
 
-        col_type=""
+        col_type=$(gum choose "int" "string" --header "Select data type for column: $col_name")
 
-        echo "enter data type for column $col_name: "
-
-        select option in "int" "string"; do
-            case $REPLY in
-            1)
-                col_type="int"
-                break
-                ;;
-            2)
-                col_type="string"
-                break
-                ;;
-            *)
-                col_type="invalid"
-                echo "invalid option"
-                break
-                ;;
-            esac
-        done
-        if [ "$col_type" == "invalid" ]; then
+        if [ -z "$col_type" ]; then
+            gum style --foreground 196 "Please select a valid data type"
             continue
         fi
+
         echo "$col_name:$col_type" >>"$dbms_dir"/"$cur_db"/"$cur_table.meta"
         col_names_arr+=("$col_name")
+        gum style --foreground 82 "✓ Column '$col_name' added as $col_type"
     done
 
     # Ask for primary key columns
     echo ""
-    echo "Available columns: ${col_names_arr[*]}"
-    read -rp "Enter primary key column names separated by commas (e.g. id or id,name for composite key): " pk_input
+    gum style --border double --padding "0 1" "Available columns: ${col_names_arr[*]}"
+    pk_input=$(gum input --placeholder "Enter primary key column names separated by commas (e.g. id or id,name)")
 
     if [ -n "$pk_input" ]; then
         echo "primary_key:$pk_input" >>"$dbms_dir"/"$cur_db"/"$cur_table.meta"
+        gum style --foreground 82 "✓ Primary key set to: $pk_input"
     fi
 
-    echo "Table structure for $cur_table created."
+    gum style --foreground 82 "✓ Table structure for '$cur_table' created successfully"
 }
 
 if [[ -f "$dbms_dir/$cur_db/$cur_table.txt" || -f "$dbms_dir/$cur_db/$cur_table.meta" ]]; then
-    read -rp "$cur_table already exists do you want ot overwrite it [Y/N]:  " option
-    if [[ "$option" =~ ^[Yy]$ ]]; then
+    if gum confirm "Table '$cur_table' already exists. Do you want to overwrite it?"; then
         rm -f "$dbms_dir/$cur_db/$cur_table.txt" "$dbms_dir/$cur_db/$cur_table.meta"
         create_table
     else
-        echo "table create cancelled"
-        exit
+        gum style --foreground 196 "Table create cancelled"
     fi
 else
     create_table
 fi
 
+sleep 1
 . ./src/after_connection.sh

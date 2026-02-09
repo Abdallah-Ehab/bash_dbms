@@ -1,28 +1,58 @@
 #!/bin/bash
 
 ## this file is for updating
-## the user should enter the col_names to update separated by a comma example
-## id,name,salary
-## then the user will be asked for the values of the update prompting user according to the number of updates
-## the code should check for the data types of the cols and for the primary key constraint
-## so this code is very similar to the insert code
 
 source ./src/helpers.sh
 
-read -rp "enter table name you want to update: " cur_table
+# Get table name
+if [[ -z "$cur_table" ]]; then
+    declare -a tables=()
+    for file in "$dbms_dir/$cur_db"/*.txt; do
+        if [ -f "$file" ]; then
+            table_name=$(basename "$file" .txt)
+            tables+=("$table_name")
+        fi
+    done
+
+    if [ ${#tables[@]} -eq 0 ]; then
+        gum style --foreground 196 "No tables found in database '$cur_db'"
+        sleep 1
+        . ./src/after_connection.sh
+        return 1
+    fi
+
+    cur_table=$(gum choose "${tables[@]}" --header "Select a table to update")
+
+    if [ -z "$cur_table" ]; then
+        gum style --foreground 196 "No table selected"
+        . ./src/after_connection.sh
+        return 1
+    fi
+fi
+
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"
 data_file="$dbms_dir/$cur_db/$cur_table.txt"
 
 # Check if table exists
 if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
-    echo "ERROR: Table '$cur_table' not found"
-    exit 1
+    gum style --foreground 196 "✗ ERROR: Table '$cur_table' not found"
+    sleep 1
+    . ./src/after_connection.sh
+    return 1
 fi
 
 populate_table_metadata
 
-read -rp "enter the names of the columns you want to UPDATE separated by [,] (e.g. name,salary): " user_input
-read -rp "enter the condition to filter rows (e.g. id=1 or empty to update all): " condition
+gum style --border double --padding "0 1" "Available columns: ${col_arr[*]}"
+user_input=$(gum input --placeholder "Enter column names to UPDATE separated by commas (e.g. name,salary)")
+
+if [ -z "$user_input" ]; then
+    gum style --foreground 196 "No columns selected"
+    . ./src/after_connection.sh
+    return 1
+fi
+
+condition=$(gum input --placeholder "Enter condition to filter rows (e.g. id=1, or leave empty to update all)")
 
 # Parse target columns and trim whitespace
 IFS=',' read -ra target_cols_raw <<<"$user_input"
@@ -30,10 +60,10 @@ target_cols=()
 for col in "${target_cols_raw[@]}"; do
     col=$(echo "$col" | xargs) # Trim whitespace
 
-    # Validate column exists
     if [[ ! -v col_datatype_dic["$col"] ]]; then
-        echo "Error: Column ($col) doesn't exist."
-        exit 1
+        gum style --foreground 196 "Error: Column '$col' doesn't exist."
+        . ./src/after_connection.sh
+        return 1
     fi
 
     target_cols+=("$col")
@@ -50,32 +80,41 @@ if [[ -n "$condition" ]]; then
         con_col_name="${BASH_REMATCH[1]}"
         op="${BASH_REMATCH[2]}"
         con_val="${BASH_REMATCH[3]}"
-        # Trim whitespace from condition value
         con_val=$(echo "$con_val" | xargs)
 
-        # Validate that the condition column exists
         if [[ ! -v col_index_dic["$con_col_name"] ]]; then
-            echo "Error: Column ($con_col_name) doesn't exist."
-            exit 1
+            gum style --foreground 196 "Error: Column '$con_col_name' doesn't exist."
+            . ./src/after_connection.sh
+            return 1
         fi
         cond_col_index="${col_index_dic[$con_col_name]}"
         [[ "$op" == "<>" ]] && op="!="
     else
-        echo "Invalid condition format. Use: column_name [=|!=|<|>|<>] value"
-        exit 1
+        gum style --foreground 196 "Invalid condition format. Use: column_name [=|!=|<|>|<>] value"
+        . ./src/after_connection.sh
+        return 1
     fi
 fi
 
-# the loop where actually updating data will happen
-## how update will happen
-##1- we will loop over the rows of the data file
-##2- if we found the correct col using the indices processed already and if the row has the condition
-##3- we ask the user for the value
-##4- we will make a new array called new_row_values to append to new values
-##then we will override the whole file when the user updates optimal ??! I don't know
-## but if not optimal how to replace the row itself in a file
-## I can't use awk since I need a lot of variables and data structures I already made which in awk is a headache
-##note we can process the row indices that has the condition == true at first before the update loop
+# Ask for new values ONCE before the loop
+declare -A new_values_dic
+gum style --border double --border-foreground 212 --padding "1 1" "Enter the new values for columns to update:"
+for col in "${target_cols[@]}"; do
+    new_val=$(gum input --placeholder "Enter new value for '$col' (${col_datatype_dic[$col]})")
+    new_val=$(echo "$new_val" | xargs)
+
+    ## datatype validation
+    validate_value_by_type "$new_val" "${col_datatype_dic[$col]}" || {
+        gum style --foreground 196 "Datatype validation failed for '$col'"
+        . ./src/after_connection.sh
+        return 1
+    }
+
+    new_values_dic["$col"]="$new_val"
+done
+
+gum style --foreground 82 "✓ Values confirmed. Processing rows..."
+sleep 1
 
 tmp_file=$(mktemp)
 updated_count=0
@@ -117,22 +156,10 @@ while read -r row <&3; do
             echo "${old_pk_parts[*]}"
         )
 
-        echo "Updating row with current values: ${row_values[*]}"
-
+        ## Apply the new values to this row
         for col in "${target_cols[@]}"; do
             idx="${col_index_dic[$col]}"
-            read -rp "enter the value for col [$col]: " new_val </dev/tty
-            # Trim whitespace from input
-            new_val=$(echo "$new_val" | xargs)
-
-            ## datatype validation
-            validate_value_by_type "$new_val" "${col_datatype_dic[$col]}" || {
-                echo "Datatype validation failed for $col"
-                rm -f "$tmp_file"
-                exit 1
-            }
-
-            row_values[$idx]="$new_val"
+            row_values[$idx]="${new_values_dic[$col]}"
         done
 
         ## build new pk
@@ -147,9 +174,10 @@ while read -r row <&3; do
 
         ## enforce pk uniqueness (allow same row)
         if [[ "$new_pk" != "$old_pk" && -v pk_value_set["$new_pk"] ]]; then
-            echo "Error: primary key constraint violation ($new_pk) already exists"
+            gum style --foreground 196 "✗ Error: Primary key constraint violation ($new_pk) already exists"
             rm -f "$tmp_file"
-            exit 1
+            . ./src/after_connection.sh
+            return 1
         fi
 
         unset pk_value_set["$old_pk"]
@@ -167,7 +195,10 @@ done 3<"$data_file"
 mv "$tmp_file" "$data_file"
 
 if [[ $updated_count -eq 0 ]]; then
-    echo "No rows matched the condition. No updates performed."
+    gum style --foreground 82 "No rows matched the condition. No updates performed."
 else
-    echo "Successfully updated $updated_count row(s)."
+    gum style --foreground 82 "✓ Successfully updated $updated_count row(s)."
 fi
+
+sleep 1
+. ./src/after_connection.sh
