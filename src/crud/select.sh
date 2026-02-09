@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source ./src/helpers.sh
+source ./src/crud/history.sh
 
 extract() {
     columns=$(echo $sql_query | sed -n "s/.*SELECT \(.*\) FROM.*/\1/pi")
@@ -189,9 +190,12 @@ display() {
 }
 
 main_select() {
-    declare -a history_arr
 
-    gum style --border double --border-foreground 212 --padding "1 2" "SQL Query Interface"
+    clear
+    echo "OurSQL Query Interface"
+    echo "Commands: \q or exit to quit, \h for history, clear to clear screen"
+    echo "Use UP/DOWN arrow keys to navigate history"
+    echo ""
 
     while true; do
         local columns=""
@@ -205,14 +209,21 @@ main_select() {
         local -a selected_col_indeces=()
         local -a final_res=()
 
-        sql_query=$(gum input --prompt "ourSQL> " --placeholder "SELECT * FROM table_name [WHERE condition]")
-
+        read_with_history "OurSql> "
+        sql_query="$current_line"
         case "${sql_query,,}" in
         exit | q | quit | bye | \\q)
             break
             ;;
         clear)
             clear
+            continue
+            ;;
+        \h | history)
+            echo "Query History:"
+            for i in "${!history_arr[@]}"; do
+                echo "$i: ${history_arr[$i]}"
+            done
             continue
             ;;
         "")
@@ -222,16 +233,18 @@ main_select() {
 
         sql_query=$(echo "$sql_query" | tr -s ' ')
         sql_query=$(echo "$sql_query" | sed 's/[[:space:]]*;$//')
-        history_arr+=("$sql_query")
 
         set -f
         extract
+        if [[ -z "$table" ]]; then 
+            echo "Error: invalid query syntax, missing table name"
+            continue
+        fi
         meta_file="$dbms_dir/$cur_db/$cur_table.meta"
         data_file="$dbms_dir/$cur_db/$cur_table.txt"
 
-        if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
-            gum style --foreground 196 "✗ ERROR: Table '$cur_table' not found"
-            set +f
+        if [[ ! -f "$meta_file" ]] || [[ ! -f "$data_file" ]]; then
+            echo "Error: table '$cur_table' does not exist"
             continue
         fi
 
