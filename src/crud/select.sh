@@ -1,37 +1,15 @@
 #!/bin/bash
 
-# if [ "$is_connected" != "true" ]; then
-#     echo "ERROR: no db connection"
-#     exit
-# fi
-
 source ./src/helpers.sh
-
-# read -rp "enter table name you wnat to select on: " cur_table;
-
-# declare columns;
-# declare table;
-# declare where_clouse;
-# declare where_col;
-# declare where_op;
-# declare where_val;
-# declare where_idx;
-# declare -a selected_cols;
-
-# declare -a selected_col_indeces;
 
 extract() {
     columns=$(echo $sql_query | sed -n "s/.*SELECT \(.*\) FROM.*/\1/pi")
-
     table=$(echo $sql_query | sed -n "s/.*FROM \([^ ]*\).*/\1/pi")
     cur_table=$table
     where_clouse=$(echo $sql_query | sed -n "s/.*WHERE \(.*\)/\1/pi")
-
     where_clouse=$(echo $where_clouse | sed 's/[[:space:]]*;$//')
-    echo "$columns + $table + $where_clouse"
 }
 
-# disable file expantion gloupaly
 parse() {
     if [[ "$columns" == "*" ]]; then
         selected_cols=("${col_arr[@]}")
@@ -45,9 +23,8 @@ parse() {
 
     for col in "${selected_cols[@]}"; do
         if [[ ! -v col_index_dic[$col] ]]; then
-            echo "Error col in query statment not exist"
-            . ./src/after_connection
-            # exit 1;
+            gum style --foreground 196 "Error: Column '$col' does not exist"
+            return 1
         fi
     done
 
@@ -56,7 +33,6 @@ parse() {
         where_op="${BASH_REMATCH[2]}"
         where_val="${BASH_REMATCH[3]}"
     fi
-
 }
 
 evaluate_where() {
@@ -79,7 +55,6 @@ evaluate_where() {
             [[ "$row_val" > "$expected_val" ]]
         fi
         ;;
-
     "<")
         if [[ "$data_type" == "int" ]]; then
             ((row_val < $expected_val))
@@ -87,7 +62,6 @@ evaluate_where() {
             [[ "$row_val" < "$expected_val" ]]
         fi
         ;;
-
     ">=")
         if [[ "$data_type" == "int" ]]; then
             ((row_val >= $expected_val))
@@ -95,7 +69,6 @@ evaluate_where() {
             [[ "$row_val" > "$expected_val" ]] || [[ "$row_val" == "$expected_val" ]]
         fi
         ;;
-
     "<=")
         if [[ "$data_type" == "int" ]]; then
             ((row_val <= $expected_val))
@@ -103,15 +76,14 @@ evaluate_where() {
             [[ "$row_val" < "$expected_val" ]] || [[ "$row_val" == "$expected_val" ]]
         fi
         ;;
-
     esac
 }
 
 execute_query() {
     for col in "${selected_cols[@]}"; do
         if [[ ! -v col_index_dic[$col] ]]; then
-            echo "Error col in query statment not exist"
-            exit 1
+            gum style --foreground 196 "Error: Column '$col' does not exist"
+            return 1
         fi
     done
 
@@ -122,7 +94,6 @@ execute_query() {
         where_idx=("${col_index_dic[$where_col]}")
     fi
 
-    #loop on row data
     header=$(
         IFS=','
         echo "${selected_cols[*]}"
@@ -134,7 +105,6 @@ execute_query() {
         filtered=()
 
         if [[ -n $where_col ]]; then
-
             if ! evaluate_where "$cur_row_val" "$where_op" "$where_val" "${col_datatype_dic[$where_col]}"; then
                 continue
             fi
@@ -150,9 +120,10 @@ execute_query() {
         final_res+=("$data")
     done <"$data_file"
 }
-desplay() {
+
+display() {
     if [ ${#final_res[@]} -eq 0 ]; then
-        echo "Empty set"
+        gum style --foreground 82 "Empty result set (0 rows)"
         return
     fi
     declare -a header_cols
@@ -176,10 +147,10 @@ desplay() {
         done
     done
 
-    # add_padding
     for i in "${!col_width[@]}"; do
         ((col_width[i] = col_width[i] + 2))
     done
+
     print_separator() {
         echo -n "+"
         for w in "${col_width[@]}"; do
@@ -188,9 +159,9 @@ desplay() {
         done
         echo ""
     }
+
     print_separator
 
-    #print header
     echo -n "|"
     for i in "${!header_cols[@]}"; do
         printf " %-$((col_width[$i] - 1))s" "${header_cols[$i]}"
@@ -199,8 +170,6 @@ desplay() {
     echo ""
 
     print_separator
-
-    #print values
 
     for ((i = 1; i < ${#final_res[@]}; i++)); do
         IFS=',' read -ra row_data <<<"${final_res[$i]}"
@@ -216,16 +185,15 @@ desplay() {
         echo ""
     done
     print_separator
-    echo "$((${#final_res[@]} - 1)) rows in set"
-
+    gum style --foreground 82 "$((${#final_res[@]} - 1)) rows in set"
 }
 
 main_select() {
-
     declare -a history_arr
-    clear
+
+    gum style --border double --border-foreground 212 --padding "1 2" "SQL Query Interface"
+
     while true; do
-        # local variables to reset every loop
         local columns=""
         local table=""
         local where_clouse=""
@@ -237,19 +205,21 @@ main_select() {
         local -a selected_col_indeces=()
         local -a final_res=()
 
-        echo "Enter your sql select query :)"
-        read -p "ourSql> " sql_query
+        sql_query=$(gum input --prompt "ourSQL> " --placeholder "SELECT * FROM table_name [WHERE condition]")
 
         case "${sql_query,,}" in
         exit | q | quit | bye | \\q)
-            echo "Bye 👋"
             break
             ;;
         clear)
             clear
             continue
             ;;
+        "")
+            continue
+            ;;
         esac
+
         sql_query=$(echo "$sql_query" | tr -s ' ')
         sql_query=$(echo "$sql_query" | sed 's/[[:space:]]*;$//')
         history_arr+=("$sql_query")
@@ -258,15 +228,28 @@ main_select() {
         extract
         meta_file="$dbms_dir/$cur_db/$cur_table.meta"
         data_file="$dbms_dir/$cur_db/$cur_table.txt"
+
+        if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
+            gum style --foreground 196 "✗ ERROR: Table '$cur_table' not found"
+            set +f
+            continue
+        fi
+
         populate_table_metadata
-        parse
-        execute_query
-        desplay
+        parse || {
+            set +f
+            continue
+        }
+        execute_query || {
+            set +f
+            continue
+        }
+        display
 
         set +f
-
     done
 }
 
 main_select
+sleep 1
 . ./src/after_connection.sh

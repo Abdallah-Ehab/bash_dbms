@@ -1,14 +1,13 @@
 #!/bin/bash
 
 if [ -d "$dbms_dir" ] && [ "$(ls -A "$dbms_dir" 2>/dev/null)" ]; then
-    echo "Databases:"
-    ls -1 "$dbms_dir"
-    echo ""
+    db_list=$(ls -1 "$dbms_dir")
+
+    # Display databases using gum style
+    gum style --border double --border-foreground 212 --padding "1 2" --align center "$(printf "Databases:\n%s" "$db_list")"
 else
-    echo "No databases found"
+    gum style --foreground 196 --border double --padding "1 2" --align center "No databases found"
 fi
 
-echo "Press Enter to continue..."
-read -r
-
+sleep 2
 . ./dbms.sh

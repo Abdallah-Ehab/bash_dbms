@@ -5,45 +5,44 @@
 
 connect_to_db() {
     local db_name=""
-    [ $# -eq 1 ] && db_name="$1" || read -p "enter the name of the db to connect to : " db_name
+    if [ $# -eq 1 ]; then
+        db_name="$1"
+    else
+        # Get list of databases and use gum filter
+        local db_list=$(ls -1 "$dbms_dir" 2>/dev/null)
+        if [ -z "$db_list" ]; then
+            gum style --foreground 196 "No databases found"
+            sleep 1
+            . ./dbms.sh
+            return 1
+        fi
+        db_name=$(echo "$db_list" | gum filter --placeholder "Select a database to connect to...")
+        if [ -z "$db_name" ]; then
+            gum style --foreground 196 "No database selected"
+            . ./dbms.sh
+            return 1
+        fi
+    fi
+
     if [ -d "$dbms_dir/$db_name" ]; then
-        echo
-        echo -n "Connecting"
+        gum spin --spinner dot --title "Connecting to database '$db_name'..." -- sleep 1
 
-        # just a cute loading animation connecting...
-        for i in {1..3}; do
-            echo -n "."
-            sleep 0.5 # 1 second is a bit slow for users, 0.5 feels snappier!
-        done
-
-        echo "DB connected successfully"
-
-        # cd "$dbms_dir/$cur_db";
         cur_db="$db_name"
         is_connected="true"
+        gum style --foreground 82 "✓ Connected to database '$db_name' successfully"
+        sleep 1
         . ./src/after_connection.sh
     else
-        echo "there is no database with this name"
-        . ./dbms.sh
-        # connect_automatically "$db_name"
-    fi
-}
+        gum style --foreground 196 "✗ Database '$db_name' does not exist"
+        sleep 1
 
-connect_automatically() {
-    local db_name="$1"
-    select option in "yes" "No"; do
-        case $REPLY in
-        1)
-            . ./src/db/create_db.sh "$1"
-            connect_to_db "$1"
-            break
-            ;;
-        2 | *)
-            echo "failed to connect to db"
-            exit
-            ;;
-        esac
-    done
+        if gum confirm "Would you like to create this database?"; then
+            . ./src/db/create_db.sh "$db_name"
+            connect_to_db "$db_name"
+        else
+            . ./dbms.sh
+        fi
+    fi
 }
 
 connect_to_db "$@"

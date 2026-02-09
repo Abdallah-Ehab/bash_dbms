@@ -1,20 +1,11 @@
 #!/bin/bash
 
-# Define Colors
-# \033[1;36m = Bold Cyan
-# \033[1;37m = Bold White
-# \033[0m    = No Color (Reset)
-COLOR_THEME='\033[1;36m'
-COLOR_ACCENT='\033[1;37m'
-NC='\033[0m'
-
 show_logo() {
     clear
-    echo -e "${COLOR_THEME}"
 
-    # The quotes around "EOF" prevent backslash/variable issues
-    # This uses the Unicode "Full Block" (█) for maximum thickness
-    cat <<"EOF"
+    # Create a styled logo box using gum
+    LOGO=$(
+        cat <<'EOF'
       ████████      ███      ███
      ███    ███     ████    ████
      ███    ███     █████  █████
@@ -23,11 +14,14 @@ show_logo() {
      ███    ███     ███      ███
      ███    ███     ███      ███
 EOF
+    )
 
-    echo -e "${NC}"
-    echo -e "${COLOR_ACCENT}==========================================${NC}"
-    echo -e " [ AM DBMS - Session Started: $(date +%H:%M:%S) ]"
-    echo -e "${COLOR_ACCENT}==========================================${NC}\n"
+    # Display logo with gum style
+    gum style --border double --border-foreground 212 --padding "1 2" "$LOGO"
+
+    # Display header info
+    gum style --foreground 212 --align center "AM DBMS - Session Started: $(date +%H:%M:%S)"
+    echo ""
 }
 
 # Call the function

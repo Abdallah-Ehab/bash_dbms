@@ -1,40 +1,57 @@
 #!/bin/bash
 
 ## this file is for deleting rows from a table
-## the user will enter a condition to filter which rows to delete
-## example: id=1 or name=john or salary>5000
-## if no condition is entered, all rows will be deleted (scary but useful)
-## we need to:
-## 1- parse the condition (same as update script)
-## 2- loop through rows and check which ones match the condition
-## 3- only write non-matching rows to the temp file
-## 4- replace the original file with the temp file
-## we also need to update the pk_value_set to remove deleted primary keys
-## this is simpler than update since we don't need to ask for new values
-## just check condition and skip writing the row if it matches
 
 source ./src/helpers.sh
 
-read -rp "enter table name you want to delete from: " cur_table
+# Get table name
+if [[ -z "$cur_table" ]]; then
+    declare -a tables=()
+    for file in "$dbms_dir/$cur_db"/*.txt; do
+        if [ -f "$file" ]; then
+            table_name=$(basename "$file" .txt)
+            tables+=("$table_name")
+        fi
+    done
+
+    if [ ${#tables[@]} -eq 0 ]; then
+        gum style --foreground 196 "No tables found in database '$cur_db'"
+        sleep 1
+        . ./src/after_connection.sh
+        return 1
+    fi
+
+    cur_table=$(gum choose "${tables[@]}" --header "Select a table to delete from")
+
+    if [ -z "$cur_table" ]; then
+        gum style --foreground 196 "No table selected"
+        . ./src/after_connection.sh
+        return 1
+    fi
+fi
+
 meta_file="$dbms_dir/$cur_db/$cur_table.meta"
 data_file="$dbms_dir/$cur_db/$cur_table.txt"
 
 # Check if table exists
 if [[ ! -f "$meta_file" || ! -f "$data_file" ]]; then
-    echo "ERROR: Table '$cur_table' not found"
-    exit 1
+    gum style --foreground 196 "✗ ERROR: Table '$cur_table' not found"
+    sleep 1
+    . ./src/after_connection.sh
+    return 1
 fi
 
 populate_table_metadata
 
-read -rp "enter the condition to filter rows for deletion (e.g. id=1 or empty to delete all): " condition
+condition=$(gum input --placeholder "Enter condition to filter rows for deletion (e.g. id=1, or leave empty to delete all)")
 
 ## show warning if deleting all rows
 if [[ -z "$condition" ]]; then
-    read -rp "WARNING: You're about to delete ALL rows from '$cur_table'. Continue? (yes/no): " confirm </dev/tty
-    if [[ "$confirm" != "yes" ]]; then
-        echo "Deletion cancelled."
-        exit 0
+    if ! gum confirm "⚠️  WARNING: You're about to delete ALL rows from '$cur_table'. Continue?"; then
+        gum style --foreground 196 "Deletion cancelled."
+        sleep 1
+        . ./src/after_connection.sh
+        return 0
     fi
 fi
 
@@ -49,28 +66,21 @@ if [[ -n "$condition" ]]; then
         con_col_name="${BASH_REMATCH[1]}"
         op="${BASH_REMATCH[2]}"
         con_val="${BASH_REMATCH[3]}"
-        # Trim whitespace from condition value
         con_val=$(echo "$con_val" | xargs)
 
-        # Validate that the condition column exists
         if [[ ! -v col_index_dic["$con_col_name"] ]]; then
-            echo "Error: Column ($con_col_name) doesn't exist."
-            exit 1
+            gum style --foreground 196 "Error: Column '$con_col_name' doesn't exist."
+            . ./src/after_connection.sh
+            return 1
         fi
         cond_col_index="${col_index_dic[$con_col_name]}"
         [[ "$op" == "<>" ]] && op="!="
     else
-        echo "Invalid condition format. Use: column_name [=|!=|<|>|<>] value"
-        exit 1
+        gum style --foreground 196 "Invalid condition format. Use: column_name [=|!=|<|>|<>] value"
+        . ./src/after_connection.sh
+        return 1
     fi
 fi
-
-## the deletion loop
-## we loop through all rows
-## if a row matches the condition, we DON'T write it to the temp file (effectively deleting it)
-## if a row doesn't match, we write it to the temp file (keeping it)
-## at the end we replace the original file with the temp file
-## we also need to rebuild the pk_value_set since we're deleting rows
 
 tmp_file=$(mktemp)
 deleted_count=0
@@ -99,12 +109,11 @@ while read -r row <&3; do
     fi
 
     if $match; then
-        ## row matches condition - DELETE it (don't write to temp file)
-        echo "Deleting row: ${row_values[*]}"
-
+        ## row matches condition - DELETE it
+        gum style --padding "0 1" --foreground 196 "Deleting row: ${row_values[*]}"
         ((deleted_count++))
     else
-        ## row doesn't match - KEEP it (write to temp file)
+        ## row doesn't match - KEEP it
         (
             IFS=','
             echo "${row_values[*]}"
@@ -115,7 +124,10 @@ done 3<"$data_file"
 mv "$tmp_file" "$data_file"
 
 if [[ $deleted_count -eq 0 ]]; then
-    echo "No rows matched the condition. No deletions performed."
+    gum style --foreground 82 "No rows matched the condition. No deletions performed."
 else
-    echo "Successfully deleted $deleted_count row(s)."
+    gum style --foreground 82 "✓ Successfully deleted $deleted_count row(s)."
 fi
+
+sleep 1
+. ./src/after_connection.sh

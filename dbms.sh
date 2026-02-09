@@ -18,28 +18,29 @@ make_dbms_dir() {
 make_dbms_dir
 . ./src/art.sh
 
-#function for creating database
-select option in "create database" "connect to database" "list databases" "drop database"; do
-    case "$REPLY" in
-    1)
+# Main database menu using gum choose
+while true; do
+    option=$(gum choose "Create Database" "Connect to Database" "List Databases" "Drop Database" "Exit" --header "Database Operations")
+
+    case "$option" in
+    "Create Database")
         . ./src/db/create_db.sh
-        break
         ;;
-    2)
+    "Connect to Database")
         . ./src/db/connect_to_db.sh
-        break
         ;;
-    3)
+    "List Databases")
         . ./src/db/list_dbs.sh
-        break
         ;;
-    4)
+    "Drop Database")
         . ./src/db/drop_db.sh
-        break
+        ;;
+    "Exit")
+        gum style --foreground 212 "Goodbye! 👋"
+        exit 0
         ;;
     *)
-        echo "$REPLY is not a valid option"
-        break
+        gum style --foreground 196 "Invalid option"
         ;;
     esac
 done
