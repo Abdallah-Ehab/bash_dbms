@@ -43,6 +43,7 @@ AM DBMS is a lightweight, file-based database management system implemented enti
 - Bash 4.0 or higher
 - Linux/Unix-like operating system (macOS, Linux, WSL, etc.)
 - Standard Unix tools (mkdir, touch, grep, awk, etc.)
+- [Gum](https://github.com/charmbracelet/gum) (for beautiful TUI menus and input prompts)
 
 ### Setup
 
@@ -65,15 +66,41 @@ chmod +x dbms.sh
 chmod +x src/**/*.sh
 ```
 
+4. Install Gum for the interactive TUI:
+
+```bash
+# macOS or Linux
+brew install gum
+
+# Ubuntu/Debian
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+sudo apt update && sudo apt install gum
+```
+
+See [Gum installation](https://github.com/charmbracelet/gum#installation) for more options.
+
 ## Quick Start
 
-To start the AM DBMS system, run:
+1. Start the application:
 
 ```bash
 ./dbms.sh
 ```
 
-This will launch the interactive main menu where you can manage databases and perform operations.
+2. Use the interactive menu to:
+   - **Create Database** - Create a new database
+   - **Connect to Database** - Select and connect to a database
+   - **List Databases** - View all databases
+   - **Drop Database** - Delete a database
+
+3. Once connected, manage tables and records:
+   - Create tables with custom columns
+   - Insert, select, update, and delete records
+   - Query with SQL-like syntax
+
+The application uses [Gum](https://github.com/charmbracelet/gum) to provide a beautiful, interactive Terminal UI with colored menus, input validation, and loading spinners.
 
 ## Database Operations
 
